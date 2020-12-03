@@ -20,6 +20,7 @@
 #include "FunctionSizeCheck.h"
 #include "IdentifierNamingCheck.h"
 #include "ImplicitBoolConversionCheck.h"
+#include "IncludeWhatYouUseCheck.h"
 #include "InconsistentDeclarationParameterNameCheck.h"
 #include "IsolateDeclarationCheck.h"
 #include "MagicNumbersCheck.h"
@@ -76,6 +77,8 @@ public:
         "readability-identifier-naming");
     CheckFactories.registerCheck<ImplicitBoolConversionCheck>(
         "readability-implicit-bool-conversion");
+    CheckFactories.registerCheck<IncludeWhatYouUseCheck>(
+        "readability-include-what-you-use");
     CheckFactories.registerCheck<InconsistentDeclarationParameterNameCheck>(
         "readability-inconsistent-declaration-parameter-name");
     CheckFactories.registerCheck<IsolateDeclarationCheck>(

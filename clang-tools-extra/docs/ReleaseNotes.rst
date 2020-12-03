@@ -323,6 +323,11 @@ New checks
   Finds calls to ``NSInvocation`` methods under ARC that don't have proper
   argument object lifetimes.
 
+- New :doc:`readability-include-what-you-use
+  <clang-tidy/checks/readability-include-what-you-use>` check.
+
+  FIXME: add release notes.
+
 - New :doc:`readability-use-anyofallof
   <clang-tidy/checks/readability-use-anyofallof>` check.
 

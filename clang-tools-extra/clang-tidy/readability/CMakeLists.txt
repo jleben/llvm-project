@@ -15,6 +15,7 @@ add_clang_library(clangTidyReadabilityModule
   FunctionSizeCheck.cpp
   IdentifierNamingCheck.cpp
   ImplicitBoolConversionCheck.cpp
+  IncludeWhatYouUseCheck.cpp
   InconsistentDeclarationParameterNameCheck.cpp
   IsolateDeclarationCheck.cpp
   MagicNumbersCheck.cpp
