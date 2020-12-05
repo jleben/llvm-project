@@ -9,6 +9,7 @@
 #include "IncludeWhatYouUseCheck.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
+#include "clang/Basic/Module.h"
 
 #include <cstdio>
 #include <iostream>
@@ -64,6 +65,9 @@ void IncludeWhatYouUseCheck::checkTypeLoc(const ast_matchers::MatchFinder::Match
         return;
     }
 
+    if (decl->hasOwningModule()) {
+        cerr << "Owning module: " << decl->getOwningModule()->getFullModuleName() << endl;
+    }
     checkLocation(typeLoc->getBeginLoc(), decl->getLocation(), Result);
 }
 
@@ -83,12 +87,50 @@ void IncludeWhatYouUseCheck::checkExpr(const ast_matchers::MatchFinder::MatchRes
     checkLocation(expr->getExprLoc(), decl->getLocation(), Result);
 }
 
+std::string fileName(FileID fileId, SourceManager *sourceManager)
+{
+    auto fileEntry = sourceManager->getFileEntryForID(fileId);
+    if (fileEntry) {
+        return fileEntry->getName().str();
+    }
+    else {
+        return "";
+    }
+}
+
+SourceLocation findIncludedSystemHeaderForLoc(SourceLocation location, SourceManager *sourceManager)
+{
+    auto fileId = sourceManager->getFileID(location);
+
+    auto includeLocation = sourceManager->getIncludeLoc(fileId);
+    if (!includeLocation.isValid())
+        return location;
+
+    auto includerKind = sourceManager->getFileCharacteristic(includeLocation);
+    if (includerKind != SrcMgr::CharacteristicKind::C_System)
+        return location;
+
+    return findIncludedSystemHeaderForLoc(includeLocation, sourceManager);
+}
+
 void IncludeWhatYouUseCheck::checkLocation
 (SourceLocation const &useLoc, SourceLocation const &declLoc,
     const ast_matchers::MatchFinder::MatchResult &Result)
 {
-
     auto fileId = Result.SourceManager->getFileID(declLoc);
+    if (fileId == Result.SourceManager->getMainFileID()) {
+        return;
+    }
+
+    auto systemIncludeLoc = findIncludedSystemHeaderForLoc(declLoc, Result.SourceManager);
+
+    if (systemIncludeLoc.isValid() && systemIncludeLoc != declLoc) {
+        auto systemFileId = Result.SourceManager->getFileID(systemIncludeLoc);
+
+        cerr << "Substituting " << fileName(fileId, Result.SourceManager)
+             << " with " << fileName(systemFileId, Result.SourceManager) << endl;
+        fileId = systemFileId;
+    }
 
     if (fileId == Result.SourceManager->getMainFileID()) {
         return;
@@ -96,7 +138,7 @@ void IncludeWhatYouUseCheck::checkLocation
 
     auto fileEntry = Result.SourceManager->getFileEntryForID(fileId);
     if (!fileEntry) {
-        cerr << "No declaration file." << endl;
+        cerr << "No file for ID." << endl;
         return;
     }
 
