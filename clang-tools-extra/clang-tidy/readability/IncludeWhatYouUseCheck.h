@@ -11,6 +11,9 @@
 
 #include "../ClangTidyCheck.h"
 
+#include <unordered_set>
+#include <string>
+
 namespace clang {
 namespace tidy {
 namespace readability {
@@ -25,6 +28,14 @@ public:
       : ClangTidyCheck(Name, Context) {}
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
+  void checkTypeLoc(const ast_matchers::MatchFinder::MatchResult &Result);
+  void checkExpr(const ast_matchers::MatchFinder::MatchResult &Result);
+  void checkLocation(SourceLocation const &useLoc,
+    SourceLocation const &declLoc,
+    const ast_matchers::MatchFinder::MatchResult &Result);
+
+private:
+    std::unordered_set<std::string> m_includes;
 };
 
 } // namespace readability
