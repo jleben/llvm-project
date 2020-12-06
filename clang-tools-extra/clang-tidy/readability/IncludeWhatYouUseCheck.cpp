@@ -13,6 +13,8 @@
 
 #include <cstdio>
 #include <iostream>
+#include <sstream>
+#include <algorithm>
 
 using namespace std;
 using namespace clang::ast_matchers;
@@ -20,6 +22,24 @@ using namespace clang::ast_matchers;
 namespace clang {
 namespace tidy {
 namespace readability {
+
+IncludeWhatYouUseCheck::~IncludeWhatYouUseCheck()
+{
+    if (!m_includes.empty())
+    {
+        vector<string> paths(m_includes.begin(), m_includes.end());
+        sort(paths.begin(), paths.end());
+
+        ostringstream msg;
+        msg << "Required includes:" << endl;
+        for (auto &path : paths) {
+            msg << path << endl;
+        }
+        msg << "... Examples follow ...";
+
+        diag(SourceLocation(), msg.str());
+    }
+}
 
 void IncludeWhatYouUseCheck::registerMatchers(MatchFinder *Finder) {
     auto exprMatcher = [](auto matcherFunc)
@@ -117,6 +137,8 @@ void IncludeWhatYouUseCheck::checkLocation
 (SourceLocation const &useLoc, SourceLocation const &declLoc,
     const ast_matchers::MatchFinder::MatchResult &Result)
 {
+    auto *sourceManager = Result.SourceManager;
+
     auto fileId = Result.SourceManager->getFileID(declLoc);
     if (fileId == Result.SourceManager->getMainFileID()) {
         return;
@@ -126,26 +148,27 @@ void IncludeWhatYouUseCheck::checkLocation
 
     if (systemIncludeLoc.isValid() && systemIncludeLoc != declLoc) {
         auto systemFileId = Result.SourceManager->getFileID(systemIncludeLoc);
-
+#if 0
         cerr << "Substituting " << fileName(fileId, Result.SourceManager)
              << " with " << fileName(systemFileId, Result.SourceManager) << endl;
+#endif
         fileId = systemFileId;
     }
 
-    if (fileId == Result.SourceManager->getMainFileID()) {
+    if (fileId == sourceManager->getMainFileID()) {
         return;
     }
 
-    auto fileEntry = Result.SourceManager->getFileEntryForID(fileId);
+    auto fileEntry = sourceManager->getFileEntryForID(fileId);
     if (!fileEntry) {
         cerr << "No file for ID." << endl;
         return;
     }
 
-    auto fileName = fileEntry->getName().str();
+    auto fileName = sourceManager->getFileManager().getCanonicalName(fileEntry).str();
     if (!m_includes.count(fileName)) {
         m_includes.insert(fileName);
-        diag(SourceLocation(), "Include: %0") << fileName;
+        diag(useLoc, "Requires: %0") << fileName;
     }
 }
 

@@ -26,6 +26,7 @@ class IncludeWhatYouUseCheck : public ClangTidyCheck {
 public:
   IncludeWhatYouUseCheck(StringRef Name, ClangTidyContext *Context)
       : ClangTidyCheck(Name, Context) {}
+  ~IncludeWhatYouUseCheck();
   void registerMatchers(ast_matchers::MatchFinder *Finder) override;
   void check(const ast_matchers::MatchFinder::MatchResult &Result) override;
   void checkTypeLoc(const ast_matchers::MatchFinder::MatchResult &Result);
